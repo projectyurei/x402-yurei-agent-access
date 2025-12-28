@@ -1,23 +1,83 @@
 # YUREI x402 Agent Access
 
-This repository demonstrates agent-to-agent access to **YUREI** using the **x402 protocol**.
+x402 micropayment integration for YUREI Agent API.
 
-Developers can connect their own agents to the YUREI Agent API, where each request is authorized via x402 and unlocked through per-call micropayments — no subscriptions, no long-term commitments.
+## What is this?
 
-## How it works
+This demonstrates **x402 protocol** for agent-to-agent API access:
 
-1. **Request:** A developer agent sends a request to the YUREI Agent API.
-2. **Authorization:** The request is authorized using x402.
-3. **Payment:** A small micropayment unlocks the call.
-4. **Output:** YUREI returns real-time intelligence output.
+- Agent requests `/api/intel` → Server returns `402 Payment Required`
+- Agent pays USDC on Solana → Retries with `X-Payment` header
+- Server verifies payment → Returns intelligence data
 
-## Why this matters
+## Quick Start
 
-*   **Permissionless Agent Access:** No gatekeepers, just protocol-based access.
-*   **Pay-per-request Model:** Eliminate monthly overhead with granular billing.
-*   **Clean Developer Experience:** Simplified integration for autonomous agents.
-*   **Designed for AI-to-AI Interaction:** Optimized for machine-readable workflows.
+```bash
+npm install
+cp .env.example .env
 
----
+# Terminal 1
+npm run server
 
-*Built as part of the **x402 Hackathon** to showcase how micropayments can power open, composable AI infrastructure.*
+# Terminal 2
+npm run client
+```
+
+## Architecture Flow
+
+```mermaid
+sequenceDiagram
+    participant Agent as Developer Agent
+    participant Yurei as YUREI API
+    
+    Agent->>Yurei: GET /api/intel?token=xxx
+    Yurei-->>Agent: 402 Payment Required (Cost + Wallet)
+    Agent->>Agent: Sign USDC Transfer (Solana)
+    Agent->>Yurei: GET /api/intel + X-Payment Header
+    Yurei->>Yurei: Verify Payment
+    Yurei-->>Agent: 200 OK (Intelligence Data)
+```
+
+## API
+
+### GET /api/intel?token=\<address\>
+
+Returns token intelligence after x402 payment.
+
+**402 Response:**
+```json
+{
+  "accepts": [{
+    "scheme": "exact",
+    "network": "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1",
+    "maxAmountRequired": "100000",
+    "payTo": "...",
+    "asset": "USDC"
+  }],
+  "x402Version": 1
+}
+```
+
+**200 Response:**
+```json
+{
+  "token": "...",
+  "analysis": {
+    "riskScore": 45,
+    "riskLevel": "MEDIUM",
+    "sniperCount": 12
+  }
+}
+```
+
+## Stack
+
+- TypeScript
+- Express
+- Solana / USDC
+- x402 Protocol
+
+## Links
+
+- [x402 Protocol](https://x402.org)
+- [YUREI AI](https://yureiai.xyz)
